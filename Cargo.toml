@@ -1,0 +1,26 @@
+[package]
+name = "sshp"
+version = "0.1.0"
+edition = "2021"
+authors = ["Kaushik Tadhani <kaushik@startuphakk.com>"]
+description = "A blazingly fast, interactive SSH host selector inspired by fzf"
+readme = "README.md"
+homepage = "https://github.com/kaushiktadhani/sshp"
+repository = "https://github.com/kaushiktadhani/sshp"
+license = "MIT"
+keywords = ["ssh", "cli", "terminal", "selector", "fzf"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "sshp"
+path = "src/main.rs"
+
+[dependencies]
+crossterm = "0.28"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
