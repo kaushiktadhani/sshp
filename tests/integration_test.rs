@@ -68,8 +68,10 @@ fn test_ssh_config_path_resolution() {
     let path = result.unwrap();
 
     // Path should end with .ssh/config
-    assert!(path.to_string_lossy().ends_with(".ssh/config") ||
-            path.to_string_lossy().ends_with(".ssh\\config"));
+    assert!(
+        path.to_string_lossy().ends_with(".ssh/config")
+            || path.to_string_lossy().ends_with(".ssh\\config")
+    );
 }
 
 #[test]
