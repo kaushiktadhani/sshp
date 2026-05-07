@@ -82,6 +82,24 @@ try {
     } else {
         Write-Host "$InstallDir is already in your PATH."
     }
+    # Add 's' shortcut alias to PowerShell profile
+    if (-not $PROFILE) {
+        Write-Host "Could not determine PowerShell profile path. Skipping alias setup."
+    } else {
+        if (-not (Test-Path $PROFILE)) {
+            New-Item -ItemType File -Path $PROFILE -Force | Out-Null
+        }
+        $ProfileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
+        if ($ProfileContent -and $ProfileContent -match 'Set-Alias\s+-Name\s+s\s+-Value\s+sshp') {
+            Write-Host "Shortcut 's' alias already exists in PowerShell profile."
+        } else {
+            Add-Content -Path $PROFILE -Value "`nSet-Alias -Name s -Value sshp"
+            Write-Host "Added 's' shortcut alias. Type 's' to launch sshp."
+        }
+    }
+
+    Write-Host ""
+    Write-Host "Restart your terminal, then run 'sshp' or 's' to get started!"
 } finally {
     Remove-Item -Recurse -Force $TmpDir -ErrorAction SilentlyContinue
 }

@@ -50,6 +50,11 @@ pub fn run_selector(hosts: Vec<SshHost>) -> io::Result<Option<String>> {
 
     render_ui(&filtered_hosts, selected, &query)?;
 
+    // Drain any pending input events (e.g. the Enter keypress that launched this command)
+    while event::poll(std::time::Duration::from_millis(50))? {
+        let _ = event::read()?;
+    }
+
     let result = loop {
         if let Event::Key(KeyEvent {
             code, modifiers, ..

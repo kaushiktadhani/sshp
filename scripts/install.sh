@@ -102,3 +102,25 @@ case ":${PATH}:" in
     echo "  export PATH=\"${INSTALL_DIR}:\$PATH\""
     ;;
 esac
+
+# Add 's' shortcut alias to shell profile
+SHELL_NAME="$(basename "$SHELL")"
+case "$SHELL_NAME" in
+  zsh)  SHELL_RC="$HOME/.zshrc" ;;
+  bash) SHELL_RC="$HOME/.bashrc" ;;
+  *)    SHELL_RC="" ;;
+esac
+
+if [ -n "$SHELL_RC" ]; then
+  touch "$SHELL_RC"
+  if grep -q "alias s='sshp'" "$SHELL_RC"; then
+    echo "Shortcut 's' alias already exists in $SHELL_RC."
+  else
+    echo "" >> "$SHELL_RC"
+    echo "alias s='sshp'" >> "$SHELL_RC"
+    echo "Added 's' shortcut alias to $SHELL_RC. Type 's' to launch sshp."
+  fi
+fi
+
+echo ""
+echo "Restart your terminal, then run 'sshp' or 's' to get started!"
