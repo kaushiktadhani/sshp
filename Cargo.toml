@@ -1,6 +1,6 @@
 [package]
 name = "sshp"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Kaushik Tadhani <kaushik@startuphakk.com>"]
 description = "A blazingly fast, interactive SSH host selector inspired by fzf"
