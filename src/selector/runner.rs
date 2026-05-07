@@ -3,7 +3,7 @@ use crate::selector::filter::filter_hosts;
 use crate::ui::render_ui;
 use crossterm::{
     cursor,
-    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     execute,
     terminal::{self, disable_raw_mode, enable_raw_mode},
 };
@@ -50,9 +50,17 @@ pub fn run_selector(hosts: Vec<SshHost>) -> io::Result<Option<String>> {
 
     render_ui(&filtered_hosts, selected, &query)?;
 
+    // Drain any pending input events (e.g. the Enter keypress that launched this command)
+    while event::poll(std::time::Duration::from_millis(50))? {
+        let _ = event::read()?;
+    }
+
     let result = loop {
         if let Event::Key(KeyEvent {
-            code, modifiers, ..
+            code,
+            modifiers,
+            kind: KeyEventKind::Press,
+            ..
         }) = event::read()?
         {
             match code {
@@ -91,4 +99,65 @@ pub fn run_selector(hosts: Vec<SshHost>) -> io::Result<Option<String>> {
     disable_raw_mode()?;
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossterm::event::{KeyEventKind, KeyEventState};
+
+    /// Returns true if the key event should be processed (only Press events).
+    fn is_key_press(event: &Event) -> bool {
+        matches!(
+            event,
+            Event::Key(KeyEvent {
+                kind: KeyEventKind::Press,
+                ..
+            })
+        )
+    }
+
+    fn make_key_event(code: KeyCode, kind: KeyEventKind) -> Event {
+        Event::Key(KeyEvent {
+            code,
+            modifiers: KeyModifiers::empty(),
+            kind,
+            state: KeyEventState::empty(),
+        })
+    }
+
+    #[test]
+    fn test_only_press_events_accepted() {
+        let press = make_key_event(KeyCode::Up, KeyEventKind::Press);
+        let release = make_key_event(KeyCode::Up, KeyEventKind::Release);
+        let repeat = make_key_event(KeyCode::Up, KeyEventKind::Repeat);
+
+        assert!(is_key_press(&press));
+        assert!(!is_key_press(&release));
+        assert!(!is_key_press(&repeat));
+    }
+
+    #[test]
+    fn test_non_key_events_rejected() {
+        let resize = Event::Resize(80, 24);
+        assert!(!is_key_press(&resize));
+    }
+
+    #[test]
+    fn test_enter_press_accepted() {
+        let enter_press = make_key_event(KeyCode::Enter, KeyEventKind::Press);
+        let enter_release = make_key_event(KeyCode::Enter, KeyEventKind::Release);
+
+        assert!(is_key_press(&enter_press));
+        assert!(!is_key_press(&enter_release));
+    }
+
+    #[test]
+    fn test_char_press_accepted() {
+        let char_press = make_key_event(KeyCode::Char('a'), KeyEventKind::Press);
+        let char_release = make_key_event(KeyCode::Char('a'), KeyEventKind::Release);
+
+        assert!(is_key_press(&char_press));
+        assert!(!is_key_press(&char_release));
+    }
 }

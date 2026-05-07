@@ -41,9 +41,7 @@ fn main() {
                 std::process::exit(status.code().unwrap_or(1));
             }
         }
-        Ok(None) => {
-            println!("Cancelled");
-        }
+        Ok(None) => {}
         Err(e) => {
             eprintln!("Error: {}", e);
             std::process::exit(1);
