@@ -7,10 +7,10 @@ $Repo = "kaushiktadhani/sshp"
 $BinaryName = "sshp"
 
 # Detect architecture
-$Arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+$Arch = $env:PROCESSOR_ARCHITECTURE
 switch ($Arch) {
-    "X64"   { $Target = "x86_64-pc-windows-msvc" }
-    "Arm64" {
+    "AMD64"   { $Target = "x86_64-pc-windows-msvc" }
+    "ARM64" {
         Write-Error "ARM64 Windows is not yet supported. Please build from source: cargo install sshp"
         exit 1
     }
