@@ -24,8 +24,11 @@ Think of it like **fzf for SSH** - designed specifically for managing server con
 ## Features
 
 - 🚀 **Lightning fast** - Built in Rust for optimal performance
-- 🔍 **Real-time search** - Filter hosts as you type (case-insensitive)
-- 🎨 **Beautiful UI** - Colorful, modern terminal interface
+- 🔍 **Fuzzy search** - fzf-style fuzzy matching finds hosts faster (type "pws" to find "production-web-server")
+- 📂 **Group organization** - Organize servers into groups (production, staging, dev) using `#group:` comments
+- 🗂️ **Grouped display** - Hosts are visually organized by group sections for easy browsing
+- 🔤 **Alphabetical sorting** - Hosts are sorted A-Z when no search query is active
+- 🎨 **Beautiful UI** - Colorful, modern terminal interface with group headers
 - ⌨️  **Intuitive controls** - Arrow keys for navigation, Backspace to edit
 - 🔌 **Auto-connect** - Instantly SSH into selected host on Enter
 - 📝 **Zero configuration** - Works with your existing `~/.ssh/config`
@@ -78,7 +81,7 @@ sshp
 
 | Key | Action |
 |-----|--------|
-| `Type` | Search and filter hosts in real-time |
+| `Type` | Fuzzy search and filter hosts in real-time |
 | `↑` / `↓` | Navigate through the filtered list |
 | `Enter` | Connect to the selected host |
 | `Backspace` | Delete characters from your search |
@@ -92,11 +95,17 @@ Here's what you'll see when you run sshp:
 $ sshp
 SSH Host Selector
 ─────────────────────────────────────────────────
-    production-server
-    staging-server
+development
   ▶ my-dev-box
+
+production
+    production-server
+
+staging
+    staging-server
+
 Search: dev_
-Use ↑/↓ to navigate, type to search, Enter to connect, Esc/Ctrl+C to quit
+Use ↑/↓, type to search, Enter to connect, Esc to quit
 ```
 
 **What happens:**
@@ -130,16 +139,29 @@ chmod 600 ~/.ssh/config
 Here's a sample `~/.ssh/config` to get you started:
 
 ```ssh-config
-Host production-server
+# Regular comments are ignored by sshp
+
+#group:production
+Host production-web-01
     HostName 203.0.113.10
     User admin
     Port 22
 
-Host staging-server
+Host production-db-01
+    HostName 203.0.113.20
+    User admin
+
+#group:staging
+Host staging-web-01
     HostName staging.example.com
     User deploy
     IdentityFile ~/.ssh/staging_key
 
+Host staging-db-01
+    HostName staging-db.example.com
+    User deploy
+
+#group:development
 Host my-dev-box
     HostName 192.168.1.100
     User developer
@@ -148,6 +170,80 @@ Host personal-vps
     HostName personal.example.com
     User root
     Port 2222
+```
+
+### Organizing Servers with Groups
+
+**sshp** supports organizing your servers into groups using special `#group:` comments:
+
+#### How Group Comments Work
+
+- A `#group:groupname` comment applies to **all hosts below it** until the next group comment
+- Group names are **case-insensitive** and normalized to lowercase
+- Regular comments (starting with `#` but not `#group:`) are ignored
+- Hosts before any group comment have no group
+
+#### Valid Group Syntax
+
+```ssh-config
+#group:production          ✅ Correct
+#group:staging-servers     ✅ Correct (hyphens allowed)
+#group:web                 ✅ Correct
+# group:production         ❌ Incorrect (space after #)
+#group:                    ❌ Incorrect (no group name)
+# This is a comment        ✅ Correct (regular comment, ignored)
+```
+
+#### How Groups Are Displayed
+
+Once you've organized your servers into groups, sshp will display them in a grouped view:
+
+- Groups appear as section headers in cyan
+- Hosts are listed underneath their group header with indentation
+- Groups are sorted alphabetically
+- Hosts without a group appear under "Other" at the bottom
+- When searching, matching hosts are still shown grouped by their group
+
+#### Example with Groups
+
+```ssh-config
+# Infrastructure servers
+
+#group:production
+Host prod-web-01
+    HostName 10.0.1.10
+
+Host prod-web-02
+    HostName 10.0.1.11
+
+Host prod-db-01
+    HostName 10.0.1.20
+
+#group:staging
+Host stage-web-01
+    HostName 10.0.2.10
+
+Host stage-db-01
+    HostName 10.0.2.20
+
+# Personal servers (no group)
+Host personal-vps
+    HostName 192.168.1.50
+```
+
+**In sshp, you'll see:**
+```
+production
+    prod-web-01
+    prod-web-02
+    prod-db-01
+
+staging
+    stage-web-01
+    stage-db-01
+
+Other
+    personal-vps
 ```
 
 **Important:** Wildcard hosts (containing `*`) are automatically excluded from the sshp list. For example:
@@ -228,7 +324,7 @@ Then **sshp is for you!**
 ✅ Beautiful terminal UI with colors and highlighting
 ✅ Works with your existing SSH setup - no extra config needed
 
-**It's like fzf but specifically designed for SSH connections.**
+**It's like fzf but specifically designed for SSH connections, with built-in support for organizing servers into groups.**
 
 ## Documentation
 
@@ -268,6 +364,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Inspired by [fzf](https://github.com/junegunn/fzf) by Junegunn Choi - the gold standard for fuzzy finding
 - Built with [crossterm](https://github.com/crossterm-rs/crossterm) for cross-platform terminal manipulation
+- Fuzzy matching powered by [nucleo-matcher](https://github.com/helix-editor/helix/tree/master/helix-core/nucleo-matcher) (used in Helix editor)
 - Thanks to all contributors and users who provide feedback and improvements
 
 ---

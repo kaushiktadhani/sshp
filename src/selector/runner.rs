@@ -1,5 +1,5 @@
 use crate::config::SshHost;
-use crate::selector::filter::filter_hosts;
+use crate::selector::filter::filter_and_rank_hosts;
 use crate::ui::render_ui;
 use crossterm::{
     cursor,
@@ -44,11 +44,14 @@ pub fn run_selector(hosts: Vec<SshHost>) -> io::Result<Option<String>> {
     let mut stdout = io::stdout();
     execute!(stdout, terminal::EnterAlternateScreen, cursor::Hide)?;
 
+    // Check if any groups exist in the full host list
+    let has_groups = hosts.iter().any(|h| h.group.is_some());
+
     let mut selected = 0;
     let mut query = String::new();
-    let mut filtered_hosts = filter_hosts(&hosts, &query);
+    let mut filtered_matches = filter_and_rank_hosts(&hosts, &query);
 
-    render_ui(&filtered_hosts, selected, &query)?;
+    render_ui(&filtered_matches, selected, &query, has_groups)?;
 
     // Drain any pending input events (e.g. the Enter keypress that launched this command)
     while event::poll(std::time::Duration::from_millis(50))? {
@@ -73,25 +76,25 @@ pub fn run_selector(hosts: Vec<SshHost>) -> io::Result<Option<String>> {
                 KeyCode::Up if selected > 0 => {
                     selected = selected.saturating_sub(1);
                 }
-                KeyCode::Down if selected < filtered_hosts.len().saturating_sub(1) => {
+                KeyCode::Down if selected < filtered_matches.len().saturating_sub(1) => {
                     selected += 1;
                 }
-                KeyCode::Enter if !filtered_hosts.is_empty() => {
-                    break Some(filtered_hosts[selected].name.clone());
+                KeyCode::Enter if !filtered_matches.is_empty() => {
+                    break Some(filtered_matches[selected].host.name.clone());
                 }
                 KeyCode::Backspace => {
                     query.pop();
-                    filtered_hosts = filter_hosts(&hosts, &query);
-                    selected = selected.min(filtered_hosts.len().saturating_sub(1));
+                    filtered_matches = filter_and_rank_hosts(&hosts, &query);
+                    selected = selected.min(filtered_matches.len().saturating_sub(1));
                 }
                 KeyCode::Char(c) => {
                     query.push(c);
-                    filtered_hosts = filter_hosts(&hosts, &query);
+                    filtered_matches = filter_and_rank_hosts(&hosts, &query);
                     selected = 0;
                 }
                 _ => {}
             }
-            render_ui(&filtered_hosts, selected, &query)?;
+            render_ui(&filtered_matches, selected, &query, has_groups)?;
         }
     };
 
